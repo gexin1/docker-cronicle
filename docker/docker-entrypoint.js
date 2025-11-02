@@ -17,9 +17,11 @@ if (
 
   if (!existsSync("./data/users")) {
     console.log("Storage init.");
-    // fix: support CRONICLE__ env variables
     const result = spawnSync("/opt/cronicle/bin/control.sh", ["setup"], {
-      ...process.env,
+      // fix: support CRONICLE__ env variables
+      env: {
+        ...process.env,
+      },
     });
     if (result.error || result.stderr.length !== 0) {
       console.log("init strorage failed");
