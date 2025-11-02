@@ -1,6 +1,9 @@
 #!/usr/bin/env node
 
-if(require("fs").existsSync("./data/users") || process.env["IS_WORKER"] === "true") {
+if (
+  require("fs").existsSync("./data/users") ||
+  process.env["IS_WORKER"] === "true"
+) {
   console.log("Docker Env already configured.");
   require("../lib/main.js");
 } else {
@@ -14,7 +17,10 @@ if(require("fs").existsSync("./data/users") || process.env["IS_WORKER"] === "tru
 
   if (!existsSync("./data/users")) {
     console.log("Storage init.");
-    const result = spawnSync("/opt/cronicle/bin/control.sh", ["setup"]);
+    // fix: support CRONICLE__ env variables
+    const result = spawnSync("/opt/cronicle/bin/control.sh", ["setup"], {
+      ...process.env,
+    });
     if (result.error || result.stderr.length !== 0) {
       console.log("init strorage failed");
       console.log(result.error?.message || result.stderr.toString());
@@ -28,11 +34,20 @@ if(require("fs").existsSync("./data/users") || process.env["IS_WORKER"] === "tru
   const config = require("../conf/config.json");
   const storage = new StandaloneStorage(config.Storage, function (err) {
     if (err) throw err;
-    const dockerHostName = (process.env["HOSTNAME"] || process.env["HOST"] || hostname()).toLowerCase();
+    const dockerHostName = (
+      process.env["HOSTNAME"] ||
+      process.env["HOST"] ||
+      hostname()
+    ).toLowerCase();
 
     const networks = networkInterfaces();
     const [ip] = Object.keys(networks)
-      .filter((eth) => networks[eth].filter((addr) => addr.internal === false && addr.family === "IPv4").length)
+      .filter(
+        (eth) =>
+          networks[eth].filter(
+            (addr) => addr.internal === false && addr.family === "IPv4"
+          ).length
+      )
       .map((eth) => networks[eth])[0];
 
     const data = {
@@ -48,7 +63,11 @@ if(require("fs").existsSync("./data/users") || process.env["IS_WORKER"] === "tru
           if (storage.isBinaryKey(key)) {
             console.log(data.toString() + "\n");
           } else {
-            console.log((typeof data == "object" ? JSON.stringify(data, null, "\t") : data) + "\n");
+            console.log(
+              (typeof data == "object"
+                ? JSON.stringify(data, null, "\t")
+                : data) + "\n"
+            );
           }
           storage.shutdown(function () {
             console.log("Docker Env Fixed.");
