@@ -8,21 +8,20 @@ if (
   require("../lib/main.js");
 } else {
   const { existsSync, unlinkSync } = require("fs");
-  const { dirname } = require("path");
+  const { dirname, join } = require("path");
   const { spawnSync } = require("child_process");
   const { hostname, networkInterfaces } = require("os");
   const StandaloneStorage = require("pixl-server-storage/standalone");
-
+  const { getCronicleConfig } = require("./utils/get-cronicle-config.js");
+  const { mergeConfigFile } = require("./utils/merge-config-file.js");
   if (existsSync("./logs/cronicled.pid")) unlinkSync("./logs/cronicled.pid");
 
   if (!existsSync("./data/users")) {
     console.log("Storage init.");
-    const result = spawnSync("/opt/cronicle/bin/control.sh", ["setup"], {
-      // fix: support CRONICLE__ env variables
-      env: {
-        ...process.env,
-      },
-    });
+    const configPath = join(__dirname, "../conf/config.json");
+    const cronicleConfig = getCronicleConfig(process.env);
+    mergeConfigFile(configPath, cronicleConfig);
+    const result = spawnSync("/opt/cronicle/bin/control.sh", ["setup"]);
     if (result.error || result.stderr.length !== 0) {
       console.log("init strorage failed");
       console.log(result.error?.message || result.stderr.toString());
